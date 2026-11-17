@@ -948,17 +948,22 @@ function profSave(){try{localStorage.setItem(PKEY,JSON.stringify({prof:$('#prPro
 $('#prProf').addEventListener('input',profSave);$('#prCref').addEventListener('input',profSave);profLoad();
 let recs=[];
 const TENS_F=[['freq','Frequência (Hz)'],['larg','Largura de pulso (µs)'],['tempo','Tempo (min)'],['intens','Intensidade'],['regiao','Região']];
+// Campos estruturados por recurso: [campo, rótulo, opções (select) ou null, inputmode]
+const REC_F={
+  TENS:[['modo','Modo',['Convencional','Acupuntura','Burst','Modulado']],...TENS_F],
+  Laser:[['modo','Modo de aplicação',['Vermelho','Infravermelho','Vermelho + Infravermelho']],['pontos','Nº de pontos',null,'numeric'],['potencia','Potência',['100 mW','150 mW']],['prof','Profundidade'],['tempo','Tempo por ponto (s)',null,'numeric']]
+};
 function renderRecs(){
   $('#recList').innerHTML=recs.map((r,i)=>`<div class="rec"><div class="top">${esc(r.tipo)}<span class="sp" style="flex:1"></span><button type="button" class="btn s" data-rm="${i}">remover</button></div>`+
-   (r.tipo==='TENS'?`<div class="grid"><div><label for="rc${i}modo">Modo</label><select id="rc${i}modo" data-ri="${i}" data-f="modo">${['','Convencional','Acupuntura','Burst','Modulado'].map(m=>`<option value="${m}"${r.modo===m?' selected':''}>${m||'—'}</option>`).join('')}</select></div>`+
-     TENS_F.map(([f,l])=>`<div><label for="rc${i}${f}">${l}</label><input id="rc${i}${f}" data-ri="${i}" data-f="${f}" value="${esc(r[f]||'')}"></div>`).join('')+'</div>'
+   (REC_F[r.tipo]?'<div class="grid">'+REC_F[r.tipo].map(([f,l,op,im])=>`<div><label for="rc${i}${f}">${l}</label>`+(op?`<select id="rc${i}${f}" data-ri="${i}" data-f="${f}">${['',...op].map(m=>`<option value="${m}"${r[f]===m?' selected':''}>${m||'—'}</option>`).join('')}</select>`:`<input id="rc${i}${f}" data-ri="${i}" data-f="${f}"${im?` inputmode="${im}"`:''} value="${esc(r[f]||'')}">`)+'</div>').join('')+'</div>'
     :`<label for="rc${i}p">Parâmetros</label><textarea id="rc${i}p" data-ri="${i}" data-f="params" placeholder="Ex.: dose, potência, tempo, região">${esc(r.params||'')}</textarea>`)+'</div>').join('');
 }
 $('#recList').addEventListener('input',e=>{const t=e.target;if(t.dataset.ri!=null)recs[+t.dataset.ri][t.dataset.f]=t.value});
 $('#recList').addEventListener('change',e=>{const t=e.target;if(t.dataset.ri!=null)recs[+t.dataset.ri][t.dataset.f]=t.value});
 $('#recList').addEventListener('click',e=>{const b=e.target.closest('[data-rm]');if(b){recs.splice(+b.dataset.rm,1);renderRecs()}});
 $('#recAdd').onchange=e=>{if(e.target.value){recs.push({tipo:e.target.value});renderRecs()}e.target.value=''};
-function recDesc(r){return r.tipo==='TENS'?[r.modo,r.freq&&r.freq+' Hz',r.larg&&r.larg+' µs',r.tempo&&r.tempo+' min',r.intens&&'intensidade '+r.intens,r.regiao&&'região: '+r.regiao].filter(Boolean).join(' · '):(r.params||'')}
+function recDesc(r){if(r.tipo==='Laser')return[r.modo,r.pontos&&r.pontos+(+r.pontos===1?' ponto':' pontos'),r.potencia,r.prof&&'profundidade '+r.prof,r.tempo&&r.tempo+' s por ponto',r.params].filter(Boolean).join(' · ');
+  return r.tipo==='TENS'?[r.modo,r.freq&&r.freq+' Hz',r.larg&&r.larg+' µs',r.tempo&&r.tempo+' min',r.intens&&'intensidade '+r.intens,r.regiao&&'região: '+r.regiao].filter(Boolean).join(' · '):(r.params||'')}
 const pacNome=()=>(cur.nome||'').trim();
 function evosDo(n){return EVO().filter(e=>(e.paciente||'').trim()===n).sort((a,b)=>((b.data||'')+(b.hora||'')).localeCompare((a.data||'')+(a.hora||'')))}
 function pront(){
