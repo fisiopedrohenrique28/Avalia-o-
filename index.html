@@ -963,8 +963,12 @@ const REC_F={
 };
 REC_F['Ondas de choque']=[['tipoOC','Tipo',['Radial','Focal']],
   ['condicao','Condição clínica',['Tendinopatia calcária de ombro','Tendinopatia de Aquiles','Tendinopatia patelar','Epicondilopatia lateral','Epicondilopatia medial','Fascite plantar (esporão)','Síndrome da dor trocantérica maior (GTPS)','Ponto-gatilho miofascial']],
-  ['prof','Profundidade',['0,5','1','1,5','2','2,5','3','3,5','4'].map(x=>x+' cm')]];
-const REC_INI={Ultrassom:{era:'7'},Tecarterapia:{potencia:'100'},'Ondas de choque':{tipoOC:'Radial'}};
+  ['prof','Profundidade',['0,5','1','1,5','2','2,5','3','3,5','4'].map(x=>x+' cm')],
+  ['ponteira','Ponteira',['6 mm','15 mm','25 mm','34 mm']],['material','Material da ponteira',['Plástica','Aço inoxidável']],
+  ['pressao','Pressão (bar)',null,'decimal'],
+  ['dpMin','Disparos por ponto (mín.)',null,'numeric'],['dpMax','Disparos por ponto (máx.)',null,'numeric'],
+  ['dtMin','Disparos totais (mín.)',null,'numeric'],['dtMax','Disparos totais (máx.)',null,'numeric']];
+const REC_INI={Ultrassom:{era:'7'},Tecarterapia:{potencia:'100'},'Ondas de choque':{tipoOC:'Radial',ponteira:'25 mm'}};
 function renderRecs(){
   $('#recList').innerHTML=recs.map((r,i)=>`<div class="rec"><div class="top">${esc(r.tipo)}<span class="sp" style="flex:1"></span><button type="button" class="btn s" data-rm="${i}">remover</button></div>`+
    (REC_F[r.tipo]?'<div class="grid">'+REC_F[r.tipo].filter(x=>!x[4]||x[4](r)).map(([f,l,op,im])=>f==='_'?`<div class="full sub" style="margin:6px 0 0">${l}</div>`:`<div><label for="rc${i}${f}">${l}</label>`+(op?`<select id="rc${i}${f}" data-ri="${i}" data-f="${f}">${['',...op].map(m=>`<option value="${m}"${r[f]===m?' selected':''}>${m||'—'}</option>`).join('')}</select>`:`<input id="rc${i}${f}" data-ri="${i}" data-f="${f}"${im?` inputmode="${im}"`:''} value="${esc(r[f]||'')}">`)+'</div>').join('')+'</div>'
@@ -977,7 +981,9 @@ $('#recList').addEventListener('change',e=>{const t=e.target;if(t.dataset.ri==nu
   if(t.tagName==='SELECT'&&vis!==tela){renderRecs();const el=$('#rc'+t.dataset.ri+t.dataset.f);if(el)el.focus()}});
 $('#recList').addEventListener('click',e=>{const b=e.target.closest('[data-rm]');if(b){recs.splice(+b.dataset.rm,1);renderRecs()}});
 $('#recAdd').onchange=e=>{const v=e.target.value;if(v){recs.push(Object.assign({tipo:v},REC_INI[v]||{}));renderRecs()}e.target.value=''};
-function recDesc(r){if(r.tipo==='Ondas de choque')return[r.tipoOC,r.condicao,r.prof&&'profundidade '+r.prof,r.params].filter(Boolean).join(' · ');
+function recDesc(r){const faixa=(a,b,u)=>a&&b?(a===b?a:a+' a '+b)+u:a?'mín. '+a+u:b?'máx. '+b+u:'';
+  if(r.tipo==='Ondas de choque')return[r.tipoOC,r.condicao,r.prof&&'profundidade '+r.prof,r.ponteira&&'ponteira '+r.ponteira+(r.material?' '+r.material.toLowerCase():''),
+    r.pressao&&r.pressao+' bar',faixa(r.dpMin,r.dpMax,' disparos por ponto'),faixa(r.dtMin,r.dtMax,' disparos totais'),r.params].filter(Boolean).join(' · ');
   if(r.tipo==='Tecarterapia')return[r.condicao,r.prof&&'profundidade: '+r.prof.toLowerCase(),r.potencia&&r.potencia+' W',r.intens&&'intensidade '+r.intens,
     r.modoPct&&'modo '+r.modoPct,r.freqT,r.tempoTotal&&'tempo total '+r.tempoTotal+' min',r.tempoCap&&'capacitivo '+r.tempoCap+' min',r.tempoRes&&'resistivo '+r.tempoRes+' min',r.params].filter(Boolean).join(' · ');
   if(r.tipo==='Ultrassom'){const p=r.modo==='Pulsado';return[r.modo&&(p&&r.ciclo?'Pulsado '+r.ciclo:r.modo),r.freqT,p&&r.frp&&'FRP '+r.frp,r.intens&&r.intens+' W/cm²',r.tempo&&r.tempo+' min',r.era&&'ERA '+r.era+' cm²',r.gordura&&'gordura '+r.gordura,r.musculo&&'músculo '+r.musculo,r.params].filter(Boolean).join(' · ')}
