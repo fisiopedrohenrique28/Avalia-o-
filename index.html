@@ -477,7 +477,7 @@ function calc(a){
   const th=s=>{const v=a['th'+s];return nr(3)?0:!v?null:v==='Negativo'?3:1};
   r.t[3]={notas:[th('E'),th('D')],info:[]};
   // 04 RI quadril
-  const ri=s=>{const v=num(a['ri'+s]);return nr(4)?0:v==null?null:v>=50?1:v>=40?2:v>=30?3:v>=20?2:1};
+  const ri=s=>{const v=num(a['ri'+s]);return nr(4)?0:v==null?null:v>=50?1:v>40?2:v>=30?3:v>=20?2:1};
   const riI=v=>v==null?null:v>=30&&v<=40?'Normal':v<30?'Rigidez em RI':'Hipermobilidade em RI';
   r.t[4]={notas:[ri('E'),ri('D')],info:[['MIE',riI(num(a.riE))],['MID',riI(num(a.riD))]]};
   // 05 Lunge
