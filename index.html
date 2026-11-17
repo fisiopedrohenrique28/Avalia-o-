@@ -412,7 +412,7 @@ svg.anim text{font-size:7.5px;fill:var(--mute);font-family:var(--ff)}
 <div id="toast" hidden></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
 <script>
 const KEY='avfunc_mmii_v1';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -1008,7 +1008,7 @@ renderRecs();
 /* ===== Supabase: tabela public.registros (user_id, id, dados, atualizado_em) com RLS por usuário ===== */
 const TABELA='registros', SBKEY='avfunc_supabase_cfg';
 // Opcional: preencha aqui para não precisar configurar em cada navegador (a chave anon é pública por design).
-const SUPABASE_URL='', SUPABASE_ANON_KEY='';
+const SUPABASE_URL='https://sskmbldgijadoggomxou.supabase.co', SUPABASE_ANON_KEY='sb_publishable_sYOOhM6fklukV0i_HDTsCw_P3hVgo0u';
 function sbCfg(){if(SUPABASE_URL&&SUPABASE_ANON_KEY)return{url:SUPABASE_URL,key:SUPABASE_ANON_KEY,fixo:true};try{return JSON.parse(localStorage.getItem(SBKEY))||null}catch(e){return null}}
 function sbView(v){['sbCfg','sbLogin','sbOn'].forEach(x=>$('#'+x).classList.toggle('hide',x!==v))}
 function sbMsg(t){$('#sbMsg').textContent=t||''}
