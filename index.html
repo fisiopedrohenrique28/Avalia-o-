@@ -1,4 +1,4 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" type="image/png" href="icon-192.png"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-title" content="Avaliação MMII"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="theme-color" content="#010066"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" type="image/png" href="icon-192.png"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-title" content="PH Fisio"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="theme-color" content="#010066"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Avaliação Funcional MMII</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -421,6 +421,7 @@ function guard(key,fn){if(!dirty||pend===key){pend=null;fn();return}pend=key;toa
 function load(){try{return JSON.parse(localStorage.getItem(KEY))||[]}catch(e){return[]}}
 function toast(t){const el=$('#toast');el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,3200)}
 const plain=o=>JSON.parse(JSON.stringify(o));
+const errTxt=e=>/fetch|network|load failed/i.test((e&&e.message)||'')?'sem conexão com a internet':(e&&(e.message||e.code))||'erro';
 async function saveAv(a){
   if(store.mode==='db'){await store.col.doc(a.id).set(plain(a));return}
   if(store.mode==='sb'){const {error}=await store.sb.from(TABELA).upsert({id:a.id,dados:plain(a)});if(error)throw error;
@@ -704,7 +705,7 @@ $('#novaAv').onclick=()=>guard('nova',()=>{cur=novo();fill();show('ficha')});
 $('#busca').oninput=lista;
 $('#salvar').onclick=async()=>{if(!cur.nome){toast('Informe o nome do paciente antes de salvar.');return}
   if(!cur.sexo){toast('Informe o sexo do paciente antes de salvar: ele define os valores de referência do CMJ e do SEBT.');$('[data-k=sexo]').focus();return}
-  try{await saveAv(cur);dirty=false;$('#msg').textContent='Salvo ✓';toast('Avaliação salva')}catch(e){toast('Não foi possível salvar ('+(e.code||'erro')+'). Tente de novo.')}};
+  try{await saveAv(cur);dirty=false;$('#msg').textContent='Salvo ✓';toast('Avaliação salva')}catch(e){toast('Não foi possível salvar ('+errTxt(e)+'). Tente de novo.')}};
 $('#verPainel').onclick=()=>show('painel');
 $('#reav').onclick=()=>guard('reav',()=>{cur=novo(cur);fill();$('#msg').textContent='Nova reavaliação (dados pessoais copiados)'});
 $('#excluir').onclick=async()=>{const b=$('#excluir');if(!db.some(a=>a.id===cur.id)){guard('limpar',()=>{cur=novo();fill()});return}
@@ -713,7 +714,10 @@ $('#excluir').onclick=async()=>{const b=$('#excluir');if(!db.some(a=>a.id===cur.
   try{await delAv(cur.id);cur=novo();toast('Avaliação excluída');show('pac')}catch(e){toast('Não foi possível excluir. Tente de novo.')}};
 async function baixar(nome,conteudo,tipo){
   if(dl){try{await dl.save({filename:nome,data:conteudo})}catch(e){if(e.code!=='declined')toast('Não foi possível baixar o arquivo.')}return}
-  const u=URL.createObjectURL(new Blob([conteudo],{type:tipo})),l=document.createElement('a');l.href=u;l.download=nome;l.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
+  const blob=conteudo instanceof Blob?conteudo:new Blob([conteudo],{type:tipo});
+  if(/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)){
+    try{const f=new File([blob],nome,{type:tipo});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:nome});return}}catch(e){if(e&&e.name==='AbortError')return}}
+  const u=URL.createObjectURL(blob),l=document.createElement('a');l.href=u;l.download=nome;l.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
 $('#exp').onclick=()=>baixar('avaliacoes-mmii-'+hoje()+'.json',JSON.stringify(db,null,1),'application/json');
 $('#btnPrint').onclick=()=>print();
 $('#btnRel').onclick=()=>{const css=document.querySelector('style').outerHTML,body=$('#v-painel').outerHTML.replace(' class="hide"','');
@@ -976,8 +980,8 @@ $('#evoAdd').onclick=async()=>{
   const proc=$('#evProc').value.trim(),evol=$('#evEvol').value.trim();
   if(!proc&&!evol&&!recs.length){toast('Preencha os procedimentos, a evolução ou um recurso.');return}
   const doc={id:uid(),kind:'evo',paciente:n,data:$('#evData').value||hoje(),hora:$('#evHora').value,procedimentos:proc,intercorrencias:$('#evInter').value.trim()||'Sem intercorrências',evolucao:evol,recursos:plain(recs),prof:$('#prProf').value.trim(),cref:$('#prCref').value.trim()};
-  try{await saveAv(doc)}catch(e){toast('Não foi possível salvar ('+(e.code||'erro')+'). Tente de novo.');return}
-  ['#evProc','#evInter','#evEvol','#evHora'].forEach(k=>$(k).value='');recs=[];renderRecs();toast('Evolução adicionada');pront();
+  try{await saveAv(doc)}catch(e){toast('Não foi possível salvar ('+errTxt(e)+'). Tente de novo.');return}
+  ['#evProc','#evInter','#evEvol','#evHora','#evData'].forEach(k=>$(k).value='');recs=[];renderRecs();toast('Evolução adicionada');pront();
 };
 $('#evoPdf').onclick=async()=>{
   const n=pacNome();if(!n){toast('Informe o nome do paciente para gerar o PDF.');return}
@@ -1020,8 +1024,10 @@ async function sbCarregar(){
     const {data,error}=await store.sb.from(TABELA).select('id,dados').order('atualizado_em',{ascending:false}).range(de,de+999);
     if(error){$('#status').textContent='Não foi possível carregar da nuvem ('+sbErr(error)+').';return}
     data.forEach(r=>out.push(Object.assign({},r.dados,{id:r.id})));if(data.length<1000)break}
-  db=out;$('#status').textContent='';sbMigInfo();rerender();
+  db=out;sbUlt=Date.now();$('#status').textContent='';sbMigInfo();rerender();
 }
+let sbUlt=0;
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&store.mode==='sb'&&Date.now()-sbUlt>30000){sbUlt=Date.now();sbCarregar()}});
 function sbLocais(){const nuvem=new Set(db.map(a=>a.id));return load().filter(a=>a&&a.id&&!nuvem.has(a.id))}
 function sbMigInfo(){const n=sbLocais().length,b=$('#sbMig');b.hidden=!n;b.textContent='Enviar '+n+' registro(s) deste navegador para a nuvem'}
 function sbModoLocal(){store={mode:'local',sb:store.sb};db=load();$('#ondeSalva').textContent='Os dados ficam salvos apenas neste navegador. Entre na conta para salvar na nuvem. Exporte um backup regularmente.';rerender()}
@@ -1037,7 +1043,7 @@ function initSupabase(){
     setTimeout(()=>{
       if(u){store={mode:'sb',sb};$('#sbWho').textContent=u.email||'';sbView('sbOn');sbMsg('');
         $('#ondeSalva').textContent='As avaliações ficam salvas na sua conta Supabase, visíveis só para você, em qualquer dispositivo. Exporte um backup de vez em quando.';sbCarregar()}
-      else{$('#sbWho').textContent='';sbView('sbLogin');sbModoLocal()}},0)});
+      else{$('#sbWho').textContent='';sbView('sbLogin');cur=novo();fill();sbModoLocal();show('pac')}},0)});
 }
 $('#sbCfgOk').onclick=()=>{const url=$('#sbUrl').value.trim().replace(/\/+$/,''),key=$('#sbKey').value.trim();
   if(!/^https:\/\/.+/.test(url)||!key){sbMsg('Preencha a URL (https://…) e a chave.');return}
